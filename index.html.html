@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa da Jornada do Cliente — Ramos Duarte</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e0d;
+    --surface: #161614;
+    --surface2: #1e1e1b;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8e6df;
+    --muted: #888780;
+    --faint: #444441;
+    --gold: #c9a84c;
+    --gold-dim: rgba(201,168,76,0.15);
+    --teal: #1D9E75;
+    --teal-dim: rgba(29,158,117,0.12);
+    --purple: #7F77DD;
+    --purple-dim: rgba(127,119,221,0.12);
+    --amber: #BA7517;
+    --amber-dim: rgba(186,117,23,0.12);
+    --green: #639922;
+    --green-dim: rgba(99,153,34,0.12);
+    --coral: #D85A30;
+    --coral-dim: rgba(216,90,48,0.12);
+    --r: 10px;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 48px 32px 64px;
+  }
+
+  .header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .header-left .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .header-left h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .header-left h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .header-right {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.7;
+  }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .map-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: 10px;
+  }
+
+  .main-flow {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 32px;
+  }
+
+  .main-flow::-webkit-scrollbar { height: 4px; }
+  .main-flow::-webkit-scrollbar-track { background: var(--surface); }
+  .main-flow::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 2px; }
+
+  .stage-col {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: 1;
+    min-width: 148px;
+    max-width: 180px;
+  }
+
+  .phase-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .stage-node {
+    border-radius: var(--r);
+    padding: 10px 12px;
+    text-align: center;
+    border: 0.5px solid;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .stage-node:hover { transform: translateY(-2px); }
+  .stage-node:hover .node-glow { opacity: 1; }
+
+  .node-glow {
+    position: absolute;
+    inset: -1px;
+    border-radius: var(--r);
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+
+  .stage-node .n {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.3;
+    position: relative;
+  }
+
+  .stage-node .s {
+    font-size: 11px;
+    margin-top: 3px;
+    line-height: 1.3;
+    position: relative;
+  }
+
+  .node-gray { background: rgba(44,44,42,0.6); border-color: var(--faint); }
+  .node-gray .n { color: #d3d1c7; }
+  .node-gray .s { color: var(--faint); }
+
+  .node-teal { background: var(--teal-dim); border-color: rgba(29,158,117,0.35); }
+  .node-teal .n { color: #9FE1CB; }
+  .node-teal .s { color: var(--teal); }
+  .node-teal:hover { border-color: var(--teal); }
+
+  .node-purple { background: var(--purple-dim); border-color: rgba(127,119,221,0.35); }
+  .node-purple .n { color: #CECBF6; }
+  .node-purple .s { color: var(--purple); }
+  .node-purple:hover { border-color: var(--purple); }
+
+  .node-amber { background: var(--amber-dim); border-color: rgba(186,117,23,0.35); }
+  .node-amber .n { color: #FAC775; }
+  .node-amber .s { color: var(--amber); }
+  .node-amber:hover { border-color: var(--amber); }
+
+  .node-green { background: var(--green-dim); border-color: rgba(99,153,34,0.35); }
+  .node-green .n { color: #C0DD97; }
+  .node-green .s { color: var(--green); }
+  .node-green:hover { border-color: var(--green); }
+
+  .node-gold { background: var(--gold-dim); border-color: rgba(201,168,76,0.4); }
+  .node-gold .n { color: var(--gold); }
+  .node-gold .s { color: rgba(201,168,76,0.6); }
+  .node-gold:hover { border-color: var(--gold); }
+
+  .node-coral { background: var(--coral-dim); border-color: rgba(216,90,48,0.35); }
+  .node-coral .n { color: #F0997B; }
+  .node-coral .s { color: var(--coral); }
+  .node-coral:hover { border-color: var(--coral); }
+
+  .actions-list { margin-top: 8px; }
+
+  .action-pill {
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: 7px;
+    padding: 6px 9px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.35;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .action-pill:hover {
+    border-color: var(--border2);
+    color: var(--text);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .action-pill.active {
+    border-color: var(--gold);
+    color: var(--text);
+    background: var(--gold-dim);
+  }
+
+  .action-pill .moment {
+    font-size: 10px;
+    color: var(--faint);
+    display: block;
+    margin-bottom: 2px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .h-arrow {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 46px;
+    color: var(--faint);
+    font-size: 18px;
+    flex-shrink: 0;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 0.5px dashed var(--border);
+    margin: 8px 0 24px;
+  }
+
+  .sub-flow {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .sub-col {
+    flex: 1;
+    min-width: 200px;
+    max-width: 280px;
+  }
+
+  .detail-panel {
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-top: 32px;
+    min-height: 100px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .detail-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--gold);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+
+  .detail-panel.active::before { transform: scaleX(1); }
+
+  .detail-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .detail-body {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+
+  .tag-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .mini-tag {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    color: var(--muted);
+  }
+
+  .footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .footer-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    color: var(--gold);
+    letter-spacing: 0.05em;
+  }
+
+  .footer-note {
+    font-size: 11px;
+    color: var(--faint);
+  }
+
+  @media (max-width: 768px) {
+    .page { padding: 28px 16px 48px; }
+    .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .header-right { text-align: left; }
+    .header-left h1 { font-size: 24px; }
+    .sub-flow { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="eyebrow">Ramos Duarte Transportes</div>
+      <h1>Mapa da jornada<br>do <em>cliente</em></h1>
+    </div>
+    <div class="header-right">
+      Logística de prontidão para quem produz<br>
+      Projeto Caixa Preta &amp; RD Origem<br>
+      <span style="color:var(--faint);">Clique em qualquer etapa para ver detalhes</span>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>Operação</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7F77DD"></div>Encantamento</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#BA7517"></div>Relacionamento</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#639922"></div>Retenção</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c9a84c"></div>Reconhecimento máximo</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#D85A30"></div>Protocolo de desvio</div>
+  </div>
+
+  <div class="map-section-label">Jornada principal</div>
+
+  <div class="main-flow">
+
+    <div class="stage-col">
+      <div class="phase-label">Fechamento</div>
+      <div class="stage-node node-gray" onclick="showDetail('fechamento')">
+        <div class="n">Carga ou contrato fechado</div>
+        <div class="s">Entrada na jornada</div>
+      </div>
+      <div class="actions-list">
+        <div class="action-pill" onclick="showDetail('crm-ganho')"><span class="moment">CRM</span>Status → Ganho</div>
+        <div class="action-pill" onclick="showDetail('classificacao')"><span class="moment">Imediato</span>Classificar cliente</div>
+        <div class="action-pill" onclick="showDetail('briefing')"><span class="moment">Dia 1</span>Briefing operacional</div>
+      </div>
+    </div>
+
+    <div class="h-arrow">›</div>
+
+    <div class="stage-col">
+      <div class="phase-label">Boas-vindas</div>
+      <div class="stage-node node-teal" onclick="showDetail('boasvindas')">
+        <div class="n">Primeiro contato</div>
+        <div class="s">Dias 1–7</div>
+      </div>
+      <div class="actions-list">
+        <div class="action-pill" onclick="showDetail('video')"><span class="moment">Dia 1</span>Vídeo personalizado</div>
+        <div class="action-pill" onclick="showDetail('apresentacao')"><span class="moment">Dia 3</span>Apresentação da equipe</div>
+        <div class="action-pill" onclick="showDetail('checklist-op')"><span class="moment">Dia 5</span>Checklist da operação</div>
+      </div>
+    </div>
+
+    <div class="h-arrow">›</div>
+
+    <div class="stage-col">
+      <div class="phase-label">Operação ativa</div>
+      <div class="stage-node node-teal" onclick="showDetail('operacao')">
+        <div class="n">Em trânsito</div>
+        <div class="s">Durante cada viagem</div>
+      </div>
+      <div class="actions-list">
+        <div class="action-pill" onclick="showDetail('saida')"><span class="moment">Saída</span>Confirmação de carregamento</div>
+        <div class="action-pill" onclick="showDetail('transito')"><span class="moment">Trânsito</span>Update proativo de rota</div>
+        <div class="action-pill" onclick="showDetail('entrega')"><span class="moment">Entrega</span>Confirmação + doc</div>
+      </div>
+    </div>
+
+    <div class="h-arrow">›</div>
+
+    <div class="stage-col">
+      <div class="phase-label">Pós-entrega</div>
+      <div class="stage-node node-purple" onclick="showDetail('posEntrega')">
+        <div class="n">Fechamento da operação</div>
+        <div class="s">48h após entrega</div>
+      </div>
+      <div class="actions-list">
+        <div class="action-pill" onclick="showDetail('pesquisa')"><span class="moment">24–48h</span>Pesquisa de satisfação</div>
+        <div class="action-pill" onclick="showDetail('ocorrencia')"><span class="moment">Se houver</span>Tratamento de ocorrência</div>
+        <div class="action-pill" onclick="showDetail('registro')"><span class="moment">Sempre</span>Registro no Notion</div>
+      </div>
+    </div>
+
+    <div class="h-arrow">›</div>
+
+    <div class="stage-col">
+      <div class="phase-label">Presença contínua</div>
+      <div class="stage-node node-amber" onclick="showDetail('presenca')">
+        <div class="n">Relacionamento ativo</div>
+        <div class="s">30 dias em diante</div>
+      </div>
+      <div class="actions-list">
+        <div class="action-pill" onclick="showDetail('checkin30')"><span class="moment">Dia 30</span>Check-in de 30 dias</div>
+        <div class="action-pill" onclick="showDetail('checkinMensal')"><span class="moment">Mensal</span>Check-in operacional</div>
+        <div class="action-pill" onclick="showDetail('relatorio')"><span class="moment">Trimestral</span>Relatório de performance</div>
+        <div class="action-pill" onclick="showDetail('sazonalidade')"><span class="moment">Antecipado</span>Alinhamento de safra</div>
+      </div>
+    </div>
+
+    <div class="h-arrow">›</div>
+
+    <div class="stage-col">
+      <div class="phase-label">Reconhecimento</div>
+      <div class="stage-node node-green" onclick="showDetail('origem')">
+        <div class="n">RD Origem</div>
+        <div class="s">6 meses de relação</div>
+      </div>
+      <div class="actions-list">
+        <div class="action-pill" onclick="showDetail('kitOrigem')"><span class="moment">6 meses</span>Kit RD Origem + carta</div>
+        <div class="action-pill" onclick="showDetail('revisaoSem')"><span class="moment">Semestral</span>Revisão de contrato</div>
+        <div class="action-pill" onclick="showDetail('pesquisaSem')"><span class="moment">Semestral</span>Pesquisa formal</div>
+      </div>
+    </div>
+
+    <div class="h-arrow">›</div>
+
+    <div class="stage-col">
+      <div class="phase-label">Parceria estratégica</div>
+      <div class="stage-node node-gold" onclick="showDetail('caixaPreta')">
+        <div class="n">Caixa Preta</div>
+        <div class="s">Critério da diretoria</div>
+      </div>
+      <div class="actions-list">
+        <div class="action-pill" onclick="showDetail('visita')"><span class="moment">Anual</span>Visita presencial</div>
+        <div class="action-pill" onclick="showDetail('inteligencia')"><span class="moment">Contínuo</span>Inteligência de mercado</div>
+        <div class="action-pill" onclick="showDetail('reuniaoEst')"><span class="moment">Anual</span>Reunião de planejamento</div>
+        <div class="action-pill" onclick="showDetail('entregaCB')"><span class="moment">Reconhecimento</span>Entrega Caixa Preta</div>
+      </div>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+  <div class="map-section-label">Protocolos de desvio</div>
+
+  <div class="sub-flow">
+    <div class="sub-col">
+      <div class="phase-label">Risco</div>
+      <div class="stage-node node-coral" onclick="showDetail('risco')">
+        <div class="n">Cliente em risco</div>
+        <div class="s">Intervenção imediata</div>
+      </div>
+      <div class="actions-list">
+        <div class="action-pill" onclick="showDetail('intervencao')"><span class="moment">Imediato</span>Ligação da diretoria</div>
+        <div class="action-pill" onclick="showDetail('planoRet')"><span class="moment">48h</span>Plano de retenção</div>
+      </div>
+    </div>
+    <div class="sub-col">
+      <div class="phase-label">Reativação</div>
+      <div class="stage-node node-amber" onclick="showDetail('adormecido')">
+        <div class="n">Cliente adormecido</div>
+        <div class="s">Protocolo de reativação</div>
+      </div>
+      <div class="actions-list">
+        <div class="action-pill" onclick="showDetail('reativacao')"><span class="moment">30 dias sem contato</span>Reativação com contexto</div>
+        <div class="action-pill" onclick="showDetail('proposta')"><span class="moment">Trimestral</span>Proposta específica</div>
+      </div>
+    </div>
+    <div class="sub-col">
+      <div class="phase-label">Spot</div>
+      <div class="stage-node node-gray" onclick="showDetail('spot')">
+        <div class="n">Cliente spot</div>
+        <div class="s">Conversão ou encerramento</div>
+      </div>
+      <div class="actions-list">
+        <div class="action-pill" onclick="showDetail('posSpt')"><span class="moment">Pós-entrega</span>Pesquisa obrigatória</div>
+        <div class="action-pill" onclick="showDetail('reat30')"><span class="moment">30 dias</span>Contato de conversão</div>
+        <div class="action-pill" onclick="showDetail('reat90')"><span class="moment">90 dias</span>Último recontato</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-title" id="detail-title">Clique em qualquer etapa ou ação</div>
+    <div class="detail-body" id="detail-body">O mapa cobre toda a jornada — do fechamento ao reconhecimento máximo, com protocolos de risco e reativação. Cada etapa tem um responsável, um timing e um objetivo claro.</div>
+    <div class="tag-row" id="detail-tags"></div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">Ramos Duarte Transportes</div>
+    <div class="footer-note">Documento interno — Carteira de Clientes · Central Comercial</div>
+  </div>
+
+</div>
+
+<script>
+const details = {
+  fechamento: { title: 'Carga ou contrato fechado', body: 'Ponto de entrada na jornada. O cliente acabou de confiar a vocês a operação dele. O que acontece nas próximas 24h define a primeira impressão da parceria.', tags: ['Gatilho: status Ganho no CRM', 'Responsável: Pedro'] },
+  'crm-ganho': { title: 'CRM → Status Ganho', body: 'Mover o card no funil imediatamente. Isso ativa a entrada do cliente na Carteira de Clientes no Notion e registra a data de início da relação.', tags: ['Notion', 'Automático ao fechar'] },
+  classificacao: { title: 'Classificar o cliente', body: 'Definir se é recorrente em desenvolvimento, spot com potencial, ou alto valor. Essa classificação determina qual cadência de relacionamento ele vai receber.', tags: ['Campo: Classificação estratégica', 'Decisão de Pedro + Halana'] },
+  briefing: { title: 'Briefing operacional interno', body: 'Passar para o time operacional tudo que o cliente precisa: rota, tipo de carga, exigências específicas, prazo, responsável do lado dele. Zero ruído na primeira operação.', tags: ['Interno', 'Dia 1'] },
+  boasvindas: { title: 'Primeiros 7 dias', body: 'A janela mais importante da relação. O cliente ainda está avaliando se tomou a decisão certa. Cada gesto aqui confirma ou contradiz a promessa que foi feita na venda.', tags: ['Encantamento', 'Alta prioridade'] },
+  video: { title: 'Vídeo de boas-vindas personalizado', body: '60 segundos. Gravado por Pedro ou Halana. Pelo nome do cliente, citando algo específico da operação. Nenhuma transportadora faz isso — e é exatamente por isso que funciona.', tags: ['WhatsApp', 'Dia 1', 'Pedro ou Halana'] },
+  apresentacao: { title: 'Apresentação da equipe operacional', body: 'O cliente precisa saber quem é o ponto de contato, como se comunica e o que esperar. Elimina a ansiedade do desconhecido — onde a maioria dos problemas de relacionamento começa.', tags: ['Ligação ou WhatsApp', 'Dia 3'] },
+  'checklist-op': { title: 'Checklist da operação confirmado', body: 'Confirmar com o cliente: datas, endereços, documentação necessária, contato no destino. Mostra organização. Previne problemas antes de existirem.', tags: ['Operacional', 'Dia 5'] },
+  operacao: { title: 'Durante a viagem', body: 'É aqui que a promessa de "extensão logística" se prova ou se quebra. O cliente não deveria precisar ligar para saber o que está acontecendo — vocês chegam antes.', tags: ['Proatividade', 'Diferencial central'] },
+  saida: { title: 'Confirmação de carregamento', body: 'Mensagem no momento em que o caminhão sai. "Seu carregamento saiu às 14h, previsão de chegada quinta-feira." Simples. O cliente sabe sem precisar perguntar.', tags: ['WhatsApp', 'No momento da saída'] },
+  transito: { title: 'Update proativo em trânsito', body: 'Se houver qualquer alteração de rota, prazo ou ocorrência — o cliente é o primeiro a saber, não o último. Isso é o que separa fornecedor de parceiro.', tags: ['WhatsApp', 'Se houver alteração'] },
+  entrega: { title: 'Confirmação de entrega + documentação', body: 'Aviso imediato da entrega com foto do canhoto ou comprovante. Fecha o ciclo da operação com organização e transparência.', tags: ['WhatsApp', 'No ato da entrega'] },
+  posEntrega: { title: 'Fechamento da operação', body: 'As 48h após a entrega são quando o cliente forma a opinião sobre a experiência. É o momento de colher feedback e registrar tudo — antes que esfrie.', tags: ['48h após entrega', 'Crítico para retenção'] },
+  pesquisa: { title: 'Pesquisa de satisfação pós-entrega', body: '3 perguntas no WhatsApp: o prazo foi cumprido? A comunicação foi boa? O que podemos melhorar? O resultado vai para o campo "Satisfação" na ficha do cliente no Notion.', tags: ['WhatsApp', '24–48h', 'Obrigatório sempre'] },
+  ocorrencia: { title: 'Tratamento de ocorrência com fechamento formal', body: 'Se algo deu errado: resolver, comunicar o que foi feito para evitar recorrência, e registrar. O cliente precisa ver que o problema virou aprendizado — não só desculpa.', tags: ['Se houver ocorrência', 'Responsável: Halana'] },
+  registro: { title: 'Registro no Notion', body: 'Toda interação, pesquisa e ocorrência registrada no banco de Registro de Interações. Isso constrói o histórico que vai informar todas as decisões futuras sobre esse cliente.', tags: ['Notion', 'Sempre', 'Quem atendeu registra'] },
+  presenca: { title: 'Presença contínua', body: 'O relacionamento não pode só existir quando há operação. A cadência de check-ins é o que transforma cliente transacional em parceiro estratégico ao longo do tempo.', tags: ['Relacionamento', 'Responsável: Pedro'] },
+  checkin30: { title: 'Check-in de 30 dias', body: 'Primeira conversa de relacionamento puro — sem operação em aberto. "Como foi o primeiro mês? Tem algo que poderíamos ter feito melhor?" Escuta ativa, sem agenda comercial.', tags: ['Ligação', 'Dia 30'] },
+  checkinMensal: { title: 'Check-in operacional mensal', body: 'Ligação ou mensagem de 5 minutos. Foco em demanda futura e satisfação corrente. Mantém a Ramos Duarte presente mesmo nos meses sem operação.', tags: ['Mensal', 'Pedro', '5 minutos'] },
+  relatorio: { title: 'Relatório trimestral de performance', body: 'Uma página: viagens realizadas, prazo médio cumprido, ocorrências e resolução. Enviado proativamente. Nenhuma transportadora faz — esse gesto sozinho já é diferencial.', tags: ['Trimestral', 'PDF ou WhatsApp', 'Dados do Sheets'] },
+  sazonalidade: { title: 'Antecipação de sazonalidade', body: 'Antes da safra, final de ano ou pico do setor do cliente — vocês chegam primeiro para alinhar capacidade. Demonstra que conhecem o negócio dele, não só o próprio.', tags: ['Antes dos picos', 'Inteligência do setor'] },
+  origem: { title: 'RD Origem — 6 meses', body: 'Clientes com 6 meses de relação ativa, saudável e com bom relacionamento recebem a Assinatura RD Origem. Não é brinde — é reconhecimento de uma jornada que se construiu.', tags: ['Elegível: recorrente ou alto valor', '6 meses', 'Carta da diretoria'] },
+  kitOrigem: { title: 'Kit RD Origem + carta institucional', body: 'Essência RD + caneta em embalagem premium. A carta — escrita por Halana ou Pedro — referencia algo específico da jornada daquele cliente. O objeto é o símbolo. A carta é o significado.', tags: ['Físico', 'Personalizado', 'Enviado pelos Correios'] },
+  revisaoSem: { title: 'Revisão semestral de contrato', body: 'Conversa estruturada: as condições ainda fazem sentido para os dois lados? Quem faz isso evita que o cliente vá buscar concorrente em silêncio por sentir que está pagando caro.', tags: ['Semestral', 'Pedro + Halana'] },
+  pesquisaSem: { title: 'Pesquisa de satisfação formal', body: 'Mais estruturada que o check pós-entrega. Avalia relacionamento, comunicação e percepção de valor geral. O resultado alimenta a ficha no Notion e pode gerar ação no banco de Ações.', tags: ['Semestral', 'Formulário ou ligação'] },
+  caixaPreta: { title: 'Caixa Preta — reconhecimento máximo', body: 'Ela não se solicita. Ela se reconhece. Decisão da diretoria, sem calendário fixo. Destinada a parceiros que construíram uma relação de longo prazo com constância, confiança e volume estratégico.', tags: ['Decisão: Halana', 'VIP', 'Institucional'] },
+  visita: { title: 'Visita presencial anual', body: 'Presença física na empresa do cliente. Não é visita de venda — é escuta estratégica. Objetivo: entender o que mudou na operação e onde a RD pode crescer junto.', tags: ['Anual', 'Pedro ou Halana', 'Agenda com antecedência'] },
+  inteligencia: { title: 'Inteligência de mercado contínua', body: 'Quando surgir algo relevante para o setor do cliente — regulação, custo de frete, problema em rota, tendência de safra — vocês enviam antes que ele descubra sozinho. Ser extensão logística é isso.', tags: ['Contínuo', 'WhatsApp ou e-mail', 'Sem agenda'] },
+  reuniaoEst: { title: 'Reunião estratégica de planejamento', body: 'Uma vez por ano: o que o cliente projeta para os próximos 12 meses, onde haverá demanda de transporte, como a RD pode estar pronta antes. Transforma o relacionamento em parceria de crescimento.', tags: ['Anual', 'Videochamada ou presencial'] },
+  entregaCB: { title: 'Entrega da Caixa Preta', body: 'Kit completo: garrafa, caneta, caderno e bateria portátil. Acompanha carta institucional que narra a jornada percorrida juntos. Entrega feita pessoalmente sempre que possível.', tags: ['Físico premium', 'Carta narrativa', 'Entrega pessoal'] },
+  risco: { title: 'Protocolo de cliente em risco', body: 'Quando o sinal de risco aparece — churn, insatisfação, silêncio prolongado — o nível de atenção precisa subir visivelmente. Não é o comercial que age: é a diretoria.', tags: ['Urgente', 'Halana ou Pedro diretamente'] },
+  intervencao: { title: 'Ligação direta da diretoria', body: 'O cliente em risco precisa sentir que a liderança está envolvida — não um representante. Ligação pessoal de Halana ou Pedro, sem script, com escuta real.', tags: ['Imediato', 'Halana ou Pedro', 'Sem intermediário'] },
+  planoRet: { title: 'Plano de retenção em 48h', body: 'Após a ligação: identificar a causa raiz, definir ação concreta, comunicar prazo. Registrar no Notion como ação de retenção urgente com responsável e data.', tags: ['48h', 'Registrar no Notion', 'Ação concreta'] },
+  adormecido: { title: 'Protocolo de reativação', body: 'Cliente que parou de operar sem explicação. O contato não é "sumiste" — é contextualizado: "vimos que faz X meses, temos uma condição específica para a sua rota." Contexto + proposta + facilidade.', tags: ['Após 60 dias sem operação', 'Pedro'] },
+  reativacao: { title: 'Reativação com contexto', body: 'Mensagem ou ligação referenciando a última operação, o que mudou desde então, e uma proposta específica para a rota ou período daquele cliente. Personalizado — não template.', tags: ['WhatsApp ou ligação', '30 dias sem contato'] },
+  proposta: { title: 'Proposta trimestral de reativação', body: 'Se o primeiro contato não converteu, um recontato trimestral com nova condição ou contexto de mercado. Após 3 tentativas sem resposta — mover para spot transacional.', tags: ['Trimestral', 'Até 3 tentativas'] },
+  spot: { title: 'Cliente spot — jornada de conversão', body: 'Todo spot começa como "Em avaliação". O objetivo é converter em recorrente dentro de 90 dias. Se não converter — manter em lista de recontato trimestral com custo mínimo de energia.', tags: ['Objetivo: converter', '90 dias de janela'] },
+  posSpt: { title: 'Pesquisa pós-entrega — obrigatória', body: 'Mesmo para spot — a pesquisa é obrigatória. É a única forma de saber se há potencial de conversão ou se foi uma operação puramente transacional.', tags: ['Obrigatório', '24–48h após entrega'] },
+  reat30: { title: 'Contato de conversão — 30 dias', body: '"Como foi a operação? Temos disponibilidade para a rota X no próximo mês." Não é follow-up genérico — é proposta com contexto e disponibilidade concreta.', tags: ['30 dias', 'Pedro', 'Proposta específica'] },
+  reat90: { title: 'Último recontato — 90 dias', body: 'Se não houve resposta ao contato de 30 dias, um último contato em 90 dias. Se não converter — classificar como spot transacional e mover para recontato trimestral mínimo.', tags: ['90 dias', 'Última tentativa ativa'] }
+};
+
+let activeKey = null;
+
+function showDetail(key) {
+  const d = details[key];
+  if (!d) return;
+
+  document.querySelectorAll('.action-pill').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.stage-node').forEach(n => n.style.outline = 'none');
+
+  const clicked = event.currentTarget;
+  if (clicked) clicked.classList.add('active');
+
+  document.getElementById('detail-title').textContent = d.title;
+  document.getElementById('detail-body').textContent = d.body;
+
+  const tagRow = document.getElementById('detail-tags');
+  tagRow.innerHTML = d.tags.map(t =>
+    `<span class="mini-tag">${t}</span>`
+  ).join('');
+
+  const panel = document.getElementById('detail-panel');
+  panel.classList.add('active');
+
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+</script>
+</body>
+</html>
